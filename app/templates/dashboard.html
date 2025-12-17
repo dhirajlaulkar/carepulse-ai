@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarePulseAI | Intelligent Patient Monitoring</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h1>CarePulseAI</h1>
+            </div>
+            <nav>
+                <a href="#" class="active">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#">
+                    <span class="icon">📅</span> Schedule
+                </a>
+                <a href="#">
+                    <span class="icon">⚙️</span> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div class="header-left">
+                    <h2>Patient Risk Overview</h2>
+                    <p>Real-time analysis of doctor-patient conversations</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="window.location.reload()">Refresh Data</button>
+                    <div class="user-profile">
+                        <div class="avatar">DR</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Scanned</h3>
+                    <div class="value">{{ stats.total }}</div>
+                </div>
+                <div class="stat-card high-risk">
+                    <h3>High Risk</h3>
+                    <div class="value">{{ stats.high_risk }}</div>
+                </div>
+                <div class="stat-card medium-risk">
+                    <h3>Medium Risk</h3>
+                    <div class="value">{{ stats.medium_risk }}</div>
+                </div>
+                <div class="stat-card low-risk">
+                    <h3>Low Risk</h3>
+                    <div class="value">{{ stats.low_risk }}</div>
+                </div>
+            </div>
+
+            <!-- Risk Distribution Chart -->
+            <div class="chart-section">
+                <h3>Risk Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Patient List -->
+            <div class="patient-list-section">
+                <div class="section-header">
+                    <h3>High Priority Attention Needed</h3>
+                    <div class="filter-controls">
+                        <select id="riskFilter">
+                            <option value="all">All Risks</option>
+                            <option value="High" selected>High Risk</option>
+                            <option value="Medium">Medium Risk</option>
+                            <option value="Low">Low Risk</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Risk Level</th>
+                                <th>Score</th>
+                                <th>Key Symptoms</th>
+                                <th>Conversation Excerpt</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for patient in patients %}
+                            <tr class="risk-row risk-{{ patient['Risk Category'] }}">
+                                <td class="patient-id">{{ patient['patient_id'] }}</td>
+                                <td>
+                                    <span class="badge risk-badge-{{ patient['Risk Category'] }}">
+                                        {{ patient['Risk Category'] }}
+                                    </span>
+                                </td>
+                                <td>{{ "%.1f"|format(patient['Risk Score']) }}</td>
+                                <td class="symptoms">
+                                    {% for symptom in patient['Symptoms'] %}
+                                        <span class="symptom-tag">{{ symptom }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td class="excerpt">{{ patient['conversation'][:60] }}...</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline">Schedule</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Chart.js Setup
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        const riskChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                datasets: [{
+                    data: [{{ stats.high_risk }}, {{ stats.medium_risk }}, {{ stats.low_risk }}],
+                    backgroundColor: [
+                        '#ff4d4d', // High (Red)
+                        '#ffa600', // Medium (Orange)
+                        '#00c853'  // Low (Green)
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#ffffff' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
