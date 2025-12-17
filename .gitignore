@@ -1,0 +1,85 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Jupyter / Notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Environment Variables & Secrets
+# =========================
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+token.json
+
+# =========================
+# Google API / OAuth Tokens
+# =========================
+client_secret*.json
+
+# =========================
+# Data Files
+# =========================
+data/
+*.tsv
+*.xlsx
+
+# =========================
+# Model Artifacts
+# =========================
+models/
+*.pkl
+*.joblib
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Web / Backend Frameworks
+# =========================
+instance/
+*.sqlite3
+*.db
+
+# =========================
+# Frontend / Dashboard (if any)
+# =========================
+node_modules/
+dist/
+build/
+
+# =========================
+# OS / Editor Files
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Testing / Coverage
+# =========================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Temporary / Misc
+# =========================
+.cache/
+.tmp/
