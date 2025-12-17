@@ -117,7 +117,7 @@
                                 </td>
                                 <td class="excerpt">{{ patient['conversation'][:60] }}...</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline">Schedule</button>
+                                    <button class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}')">Schedule</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -129,6 +129,23 @@
     </div>
 
     <script>
+        async function schedulePatient(patientId) {
+            try {
+                const response = await fetch(`/api/schedule/${patientId}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    alert(`Success! Appointment scheduled for ${result.time} (${result.priority} priority).`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to schedule appointment.');
+            }
+        }
+
         // Chart.js Setup
         const ctx = document.getElementById('riskChart').getContext('2d');
         const riskChart = new Chart(ctx, {

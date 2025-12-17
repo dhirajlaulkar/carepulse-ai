@@ -52,5 +52,26 @@ async def get_patients():
         return []
     return df.where(pd.notnull(df), None).to_dict(orient='records')
 
+from src.calendar_service import calendar_service
+
+@app.post("/api/schedule/{patient_id}")
+async def schedule_patient(patient_id: str):
+    df = load_data()
+    if df.empty:
+        return {"error": "No data found"}
+    
+    patient = df[df['patient_id'] == patient_id]
+    if patient.empty:
+        return {"error": "Patient not found"}
+    
+    patient_data = patient.iloc[0]
+    risk = patient_data['Risk Category']
+    # Use symptoms as reason, or generic if empty
+    symptoms = patient_data['Symptoms']
+    reason = f"Follow-up for: {symptoms}" if symptoms else "General Follow-up"
+    
+    appointment = calendar_service.schedule_appointment(patient_id, risk, reason)
+    return appointment
+
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
