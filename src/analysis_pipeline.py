@@ -13,6 +13,10 @@ def main():
     # Apply cleaning
     df['cleaned_text'] = df['conversation'].apply(clean_text)
     
+    # Generate Patient IDs if missing
+    if 'patient_id' not in df.columns:
+        df['patient_id'] = [f"P{i+1:03d}" for i in range(len(df))]
+    
     # Apply NLP extraction
     # We apply to the original text for sentiment/keywords to preserve context, 
     # but cleaning might help some keyword matching if we did regex. 
