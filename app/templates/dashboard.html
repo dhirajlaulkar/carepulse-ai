@@ -70,7 +70,11 @@
             <div class="chart-section">
                 <h3>Risk Distribution</h3>
                 <div class="chart-container">
-                    <canvas id="riskChart"></canvas>
+                    <canvas id="riskChart" 
+                        data-high="{{ stats.high_risk }}" 
+                        data-medium="{{ stats.medium_risk }}" 
+                        data-low="{{ stats.low_risk }}">
+                    </canvas>
                 </div>
             </div>
 
@@ -147,13 +151,20 @@
         }
 
         // Chart.js Setup
-        const ctx = document.getElementById('riskChart').getContext('2d');
+        const riskCanvas = document.getElementById('riskChart');
+        const riskData = {
+            high: parseInt(riskCanvas.dataset.high) || 0,
+            medium: parseInt(riskCanvas.dataset.medium) || 0,
+            low: parseInt(riskCanvas.dataset.low) || 0
+        };
+
+        const ctx = riskCanvas.getContext('2d');
         const riskChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['High Risk', 'Medium Risk', 'Low Risk'],
                 datasets: [{
-                    data: [{{ stats.high_risk }}, {{ stats.medium_risk }}, {{ stats.low_risk }}],
+                    data: [riskData.high, riskData.medium, riskData.low],
                     backgroundColor: [
                         '#ff4d4d', // High (Red)
                         '#ffa600', // Medium (Orange)
