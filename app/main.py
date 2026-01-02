@@ -42,8 +42,11 @@ async def dashboard(request: Request):
         stats['medium_risk'] = risk_counts.get('Medium', 0)
         stats['low_risk'] = risk_counts.get('Low', 0)
         
+        # Sort by Risk Score descending (High Risk first)
+        df_sorted = df.sort_values(by='Risk Score', ascending=False)
+        
         # Convert NaN to None for JSON compatibility
-        patients = df.where(pd.notnull(df), None).to_dict(orient='records')
+        patients = df_sorted.where(pd.notnull(df_sorted), None).to_dict(orient='records')
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
