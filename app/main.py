@@ -43,10 +43,10 @@ async def dashboard(request: Request, page: int = 1):
         stats['medium_risk'] = risk_counts.get('Medium', 0)
         stats['low_risk'] = risk_counts.get('Low', 0)
         
-        # Sort by Risk Score descending (High Risk first)
+       
         df_sorted = df.sort_values(by='Risk Score', ascending=False)
         
-        # Pagination
+      
         total_records = len(df_sorted)
         total_pages = (total_records + PER_PAGE - 1) // PER_PAGE
         
