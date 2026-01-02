@@ -376,15 +376,7 @@ tr:last-child td {
     color: var(--text-secondary);
 }
 
-.excerpt {
-    color: var(--text-secondary);
-    font-style: italic;
-    font-size: 0.9rem;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+
 
 .btn-sm {
     padding: 8px 16px;
