@@ -28,14 +28,17 @@ def load_data():
     return pd.DataFrame()
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
+async def dashboard(request: Request, page: int = 1):
     df = load_data()
     
     patients = []
     stats = {'total': 0, 'high_risk': 0, 'medium_risk': 0, 'low_risk': 0}
+    
+    PER_PAGE = 15
+    total_pages = 1
 
     if not df.empty:
-        # Calculate stats
+        # Calculate stats (on full dataset)
         risk_counts = df['Risk Category'].value_counts().to_dict()
         stats['total'] = len(df)
         stats['high_risk'] = risk_counts.get('High', 0)
@@ -45,13 +48,25 @@ async def dashboard(request: Request):
         # Sort by Risk Score descending (High Risk first)
         df_sorted = df.sort_values(by='Risk Score', ascending=False)
         
+        # Pagination Logic
+        total_records = len(df_sorted)
+        total_pages = (total_records + PER_PAGE - 1) // PER_PAGE
+        
+        start = (page - 1) * PER_PAGE
+        end = start + PER_PAGE
+        
+        # Slice the dataframe
+        df_paginated = df_sorted.iloc[start:end]
+        
         # Convert NaN to None for JSON compatibility
-        patients = df_sorted.where(pd.notnull(df_sorted), None).to_dict(orient='records')
+        patients = df_paginated.where(pd.notnull(df_paginated), None).to_dict(orient='records')
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "patients": patients,
-        "stats": stats
+        "stats": stats,
+        "current_page": page,
+        "total_pages": total_pages
     })
 
 @app.get("/api/patients")
@@ -75,7 +90,7 @@ async def schedule_patient(patient_id: str):
     
     patient_data = patient.iloc[0]
     risk = patient_data['Risk Category']
-    # Use symptoms as reason, or generic if empty
+
     symptoms = patient_data['Symptoms']
     reason = f"Follow-up for: {symptoms}" if symptoms else "General Follow-up"
     
