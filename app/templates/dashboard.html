@@ -84,8 +84,8 @@
                     <h3>High Priority Attention Needed</h3>
                     <div class="filter-controls">
                         <select id="riskFilter">
-                            <option value="all">All Risks</option>
-                            <option value="High" selected>High Risk</option>
+                            <option value="all" selected>All Risks</option>
+                            <option value="High">High Risk</option>
                             <option value="Medium">Medium Risk</option>
                             <option value="Low">Low Risk</option>
                         </select>
@@ -131,6 +131,30 @@
     </div>
 
     <script>
+        // Filter Logic
+        document.getElementById('riskFilter').addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('.risk-row');
+            
+            rows.forEach(row => {
+                if (filterValue === 'all') {
+                    row.style.display = '';
+                } else {
+                    if (row.classList.contains(`risk-${filterValue}`)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        // Trigger filter on load if needed (optional, but good for consistency)
+        // Currently defaulted to High in HTML, so let's enforce it or switch to All
+        // The user previously wanted "Prioritizing high risk", so defaulting to High filter might be aggressive if they want to see all.
+        // Let's change the default HTML to 'all' to avoid confusion, OR enforce the 'High' filter on load.
+        // Given the screenshot showed 'Low Risk' (user probably changed it testing), I'll make sure it works.
+        
         async function schedulePatient(patientId) {
             try {
                 const response = await fetch(`/api/schedule/${patientId}`, {
