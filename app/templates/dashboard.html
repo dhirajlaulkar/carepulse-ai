@@ -103,26 +103,8 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for patient in patients %}
-                            <tr class="risk-row risk-{{ patient['Risk Category'] }}">
-                                <td class="patient-id">{{ patient['patient_id'] }}</td>
-                                <td>
-                                    <span class="badge risk-badge-{{ patient['Risk Category'] }}">
-                                        {{ patient['Risk Category'] }}
-                                    </span>
-                                </td>
-                                <td>{{ "%.1f"|format(patient['Risk Score']) }}</td>
-                                <td class="symptoms">
-                                    {% for symptom in patient['Symptoms'] %}
-                                        <span class="symptom-tag">{{ symptom }}</span>
-                                    {% endfor %}
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}')">Schedule</button>
-                                </td>
-                            </tr>
-                            {% endfor %}
+                        <tbody id="patient-table-body">
+                            {% include 'patient_rows.html' %}
                         </tbody>
                     </table>
                 </div>
@@ -130,22 +112,13 @@
                 <!-- Pagination Controls -->
                 <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 0 10px;">
                     <div>
-                        <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                        <span id="page-indicator" style="color: var(--text-secondary); font-size: 0.9rem;">
                             Page {{ current_page }} of {{ total_pages }}
                         </span>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        {% if current_page > 1 %}
-                        <a href="/?page={{ current_page - 1 }}" class="btn btn-sm btn-outline" style="text-decoration: none;">Previous</a>
-                        {% else %}
-                        <button class="btn btn-sm btn-outline" disabled style="opacity: 0.5; cursor: not-allowed;">Previous</button>
-                        {% endif %}
-                        
-                        {% if current_page < total_pages %}
-                        <a href="/?page={{ current_page + 1 }}" class="btn btn-sm btn-outline" style="text-decoration: none;">Next</a>
-                        {% else %}
-                        <button class="btn btn-sm btn-outline" disabled style="opacity: 0.5; cursor: not-allowed;">Next</button>
-                        {% endif %}
+                        <button id="prev-btn" class="btn btn-sm btn-outline" onclick="changePage(currentPage - 1)" {% if current_page <= 1 %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>Previous</button>
+                        <button id="next-btn" class="btn btn-sm btn-outline" onclick="changePage(currentPage + 1)" {% if current_page >= total_pages %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>Next</button>
                     </div>
                 </div>
             </div>
@@ -153,6 +126,53 @@
     </div>
 
     <script>
+        let currentPage = {{ current_page }};
+        let totalPages = {{ total_pages }};
+
+        async function changePage(newPage) {
+            if (newPage < 1 || newPage > totalPages) return;
+            
+            try {
+                const response = await fetch(`/partials/patients?page=${newPage}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const html = await response.text();
+                document.getElementById('patient-table-body').innerHTML = html;
+                
+                currentPage = newPage;
+                updatePaginationControls();
+                
+                // Re-apply filter if needed (simplistic approach: just re-trigger change)
+                const filterVal = document.getElementById('riskFilter').value;
+                if (filterVal !== 'all') {
+                     // Since we replaced rows, we need to hide the ones that don't match the current filter
+                     // But wait, the partial returns ALL rows for that page. 
+                     // The filter logic hides rows based on class.
+                     // So we just need to re-run the filter logic.
+                     document.getElementById('riskFilter').dispatchEvent(new Event('change'));
+                }
+
+            } catch (error) {
+                console.error('Error fetching page:', error);
+                alert('Failed to load data.');
+            }
+        }
+
+        function updatePaginationControls() {
+            document.getElementById('page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
+            
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            prevBtn.disabled = currentPage <= 1;
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+            prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
+            
+            nextBtn.disabled = currentPage >= totalPages;
+            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+            nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
+        }
+
         // Filter Logic
         document.getElementById('riskFilter').addEventListener('change', function() {
             const filterValue = this.value;

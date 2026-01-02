@@ -1,0 +1,19 @@
+{% for patient in patients %}
+<tr class="risk-row risk-{{ patient['Risk Category'] }}">
+    <td class="patient-id">{{ patient['patient_id'] }}</td>
+    <td>
+        <span class="badge risk-badge-{{ patient['Risk Category'] }}">
+            {{ patient['Risk Category'] }}
+        </span>
+    </td>
+    <td>{{ "%.1f"|format(patient['Risk Score']) }}</td>
+    <td class="symptoms">
+        {% for symptom in patient['Symptoms'] %}
+            <span class="symptom-tag">{{ symptom }}</span>
+        {% endfor %}
+    </td>
+    <td>
+        <button class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}')">Schedule</button>
+    </td>
+</tr>
+{% endfor %}

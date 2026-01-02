@@ -30,15 +30,13 @@ def load_data():
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, page: int = 1):
     df = load_data()
-    
-    patients = []
     stats = {'total': 0, 'high_risk': 0, 'medium_risk': 0, 'low_risk': 0}
-    
+    patients = []
     PER_PAGE = 15
     total_pages = 1
 
     if not df.empty:
-        # Calculate stats (on full dataset)
+        # Calculate stats
         risk_counts = df['Risk Category'].value_counts().to_dict()
         stats['total'] = len(df)
         stats['high_risk'] = risk_counts.get('High', 0)
@@ -48,17 +46,13 @@ async def dashboard(request: Request, page: int = 1):
         # Sort by Risk Score descending (High Risk first)
         df_sorted = df.sort_values(by='Risk Score', ascending=False)
         
-        # Pagination Logic
+        # Pagination
         total_records = len(df_sorted)
         total_pages = (total_records + PER_PAGE - 1) // PER_PAGE
         
         start = (page - 1) * PER_PAGE
         end = start + PER_PAGE
-        
-        # Slice the dataframe
         df_paginated = df_sorted.iloc[start:end]
-        
-        # Convert NaN to None for JSON compatibility
         patients = df_paginated.where(pd.notnull(df_paginated), None).to_dict(orient='records')
 
     return templates.TemplateResponse("dashboard.html", {
@@ -67,6 +61,25 @@ async def dashboard(request: Request, page: int = 1):
         "stats": stats,
         "current_page": page,
         "total_pages": total_pages
+    })
+
+@app.get("/partials/patients", response_class=HTMLResponse)
+async def get_patient_rows(request: Request, page: int = 1):
+    df = load_data()
+    patients = []
+    PER_PAGE = 15
+    
+    if not df.empty:
+        df_sorted = df.sort_values(by='Risk Score', ascending=False)
+        total_records = len(df_sorted)
+        start = (page - 1) * PER_PAGE
+        end = start + PER_PAGE
+        df_paginated = df_sorted.iloc[start:end]
+        patients = df_paginated.where(pd.notnull(df_paginated), None).to_dict(orient='records')
+        
+    return templates.TemplateResponse("patient_rows.html", {
+        "request": request,
+        "patients": patients
     })
 
 @app.get("/api/patients")
