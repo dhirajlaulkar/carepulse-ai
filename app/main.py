@@ -63,6 +63,12 @@ async def dashboard(request: Request, page: int = 1):
         "total_pages": total_pages
     })
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings(request: Request):
+    return templates.TemplateResponse("settings.html", {
+        "request": request
+    })
+
 @app.get("/partials/patients", response_class=HTMLResponse)
 async def get_patient_rows(request: Request, page: int = 1):
     df = load_data()
