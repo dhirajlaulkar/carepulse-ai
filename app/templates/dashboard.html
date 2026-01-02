@@ -126,8 +126,8 @@
     </div>
 
     <script>
-        let currentPage = {{ current_page }};
-        let totalPages = {{ total_pages }};
+        let currentPage = Number("{{ current_page }}");
+        let totalPages = Number("{{ total_pages }}");
 
         async function changePage(newPage) {
             if (newPage < 1 || newPage > totalPages) return;
@@ -142,13 +142,10 @@
                 currentPage = newPage;
                 updatePaginationControls();
                 
-                // Re-apply filter if needed (simplistic approach: just re-trigger change)
+            
                 const filterVal = document.getElementById('riskFilter').value;
                 if (filterVal !== 'all') {
-                     // Since we replaced rows, we need to hide the ones that don't match the current filter
-                     // But wait, the partial returns ALL rows for that page. 
-                     // The filter logic hides rows based on class.
-                     // So we just need to re-run the filter logic.
+                     
                      document.getElementById('riskFilter').dispatchEvent(new Event('change'));
                 }
 
