@@ -362,16 +362,18 @@ tr:last-child td {
 }
 
 .symptom-tag {
-    background: var(--bg-body);
-    border: 1px solid var(--border-color);
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 0;
+    font-size: 0.9rem;
+    margin-right: 4px;
+    display: inline;
+}
+
+.symptom-tag:not(:last-child)::after {
+    content: ", ";
     color: var(--text-secondary);
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    margin-right: 6px;
-    white-space: nowrap;
-    display: inline-block;
-    margin-bottom: 4px;
 }
 
 .excerpt {

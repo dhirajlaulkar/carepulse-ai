@@ -14,11 +14,17 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Templates
 templates = Jinja2Templates(directory="app/templates")
 
+import ast
+
 DATA_FILE = 'data/processed_patients.csv'
 
 def load_data():
     if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
+        df = pd.read_csv(DATA_FILE)
+        # Parse 'Symptoms' column from string representation to actual list
+        if 'Symptoms' in df.columns:
+            df['Symptoms'] = df['Symptoms'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else [])
+        return df
     return pd.DataFrame()
 
 @app.get("/", response_class=HTMLResponse)
