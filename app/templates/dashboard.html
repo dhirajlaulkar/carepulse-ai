@@ -128,12 +128,13 @@
     <script>
         let currentPage = Number("{{ current_page }}");
         let totalPages = Number("{{ total_pages }}");
+        let currentFilter = "{{ current_filter }}";
 
         async function changePage(newPage) {
             if (newPage < 1 || newPage > totalPages) return;
             
             try {
-                const response = await fetch(`/partials/patients?page=${newPage}`);
+                const response = await fetch(`/partials/patients?page=${newPage}&risk_filter=${currentFilter}`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 
                 const html = await response.text();
@@ -142,13 +143,6 @@
                 currentPage = newPage;
                 updatePaginationControls();
                 
-            
-                const filterVal = document.getElementById('riskFilter').value;
-                if (filterVal !== 'all') {
-                     
-                     document.getElementById('riskFilter').dispatchEvent(new Event('change'));
-                }
-
             } catch (error) {
                 console.error('Error fetching page:', error);
                 alert('Failed to load data.');
@@ -171,28 +165,28 @@
         }
 
         // Filter Logic
-        document.getElementById('riskFilter').addEventListener('change', function() {
-            const filterValue = this.value;
-            const rows = document.querySelectorAll('.risk-row');
+        // Filter Logic
+        document.getElementById('riskFilter').addEventListener('change', async function() {
+            currentFilter = this.value;
+            // When filter changes, reset to page 1 and reload data
             
-            rows.forEach(row => {
-                if (filterValue === 'all') {
-                    row.style.display = '';
-                } else {
-                    if (row.classList.contains(`risk-${filterValue}`)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                }
-            });
-        });
+            // First, update URL without reload (optional but good for bookmarking if we went full SPA)
+            const url = new URL(window.location);
+            url.searchParams.set('risk_filter', currentFilter);
+            url.searchParams.set('page', 1);
+            window.history.pushState({}, '', url);
 
-        // Trigger filter on load if needed (optional, but good for consistency)
-        // Currently defaulted to High in HTML, so let's enforce it or switch to All
-        // The user previously wanted "Prioritizing high risk", so defaulting to High filter might be aggressive if they want to see all.
-        // Let's change the default HTML to 'all' to avoid confusion, OR enforce the 'High' filter on load.
-        // Given the screenshot showed 'Low Risk' (user probably changed it testing), I'll make sure it works.
+            // Reload data (technically we could just reuse changePage(1) logic but with reset totalPages?)
+            // We need to reload the whole page or just the table? 
+            // Ideally just the table, BUT the total pages might change!
+            // The partial doesn't return total_pages.
+            // So simplest is to just reload the page with new query param.
+            
+            window.location.href = `/?page=1&risk_filter=${currentFilter}`;
+        });
+        
+        // set initial state of dropdown
+        document.getElementById('riskFilter').value = currentFilter;
         
         async function schedulePatient(patientId) {
             try {

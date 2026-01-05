@@ -36,19 +36,33 @@ async def dashboard(request: Request, page: int = 1):
     total_pages = 1
 
     if not df.empty:
-        # Calculate stats
+        # Calculate stats (global)
         risk_counts = df['Risk Category'].value_counts().to_dict()
         stats['total'] = len(df)
         stats['high_risk'] = risk_counts.get('High', 0)
         stats['medium_risk'] = risk_counts.get('Medium', 0)
         stats['low_risk'] = risk_counts.get('Low', 0)
         
-       
-        df_sorted = df.sort_values(by='Risk Score', ascending=False)
+        # Filter by risk if needed
+        # Note: We filter BEFORE pagination, but AFTER calculating global stats? 
+        # Usually stats show "Total" but table shows filtered. 
+        # Let's align with that.
         
-      
+        df_filtered = df.copy()
+        
+        # Get filter from query param, default 'all'
+        risk_filter = request.query_params.get('risk_filter', 'all')
+        
+        if risk_filter and risk_filter.lower() != 'all':
+             df_filtered = df_filtered[df_filtered['Risk Category'] == risk_filter]
+
+        # Sort by Risk Score descending (High Risk first)
+        df_sorted = df_filtered.sort_values(by='Risk Score', ascending=False)
+        
+        # Pagination
         total_records = len(df_sorted)
         total_pages = (total_records + PER_PAGE - 1) // PER_PAGE
+        if total_pages < 1: total_pages = 1
         
         start = (page - 1) * PER_PAGE
         end = start + PER_PAGE
@@ -60,7 +74,8 @@ async def dashboard(request: Request, page: int = 1):
         "patients": patients,
         "stats": stats,
         "current_page": page,
-        "total_pages": total_pages
+        "total_pages": total_pages,
+        "current_filter": request.query_params.get('risk_filter', 'all')
     })
 
 @app.get("/settings", response_class=HTMLResponse)
@@ -70,14 +85,19 @@ async def settings(request: Request):
     })
 
 @app.get("/partials/patients", response_class=HTMLResponse)
-async def get_patient_rows(request: Request, page: int = 1):
+async def get_patient_rows(request: Request, page: int = 1, risk_filter: str = 'all'):
     df = load_data()
     patients = []
     PER_PAGE = 15
     
     if not df.empty:
-        df_sorted = df.sort_values(by='Risk Score', ascending=False)
+        df_filtered = df.copy()
+        if risk_filter and risk_filter.lower() != 'all':
+             df_filtered = df_filtered[df_filtered['Risk Category'] == risk_filter]
+
+        df_sorted = df_filtered.sort_values(by='Risk Score', ascending=False)
         total_records = len(df_sorted)
+        
         start = (page - 1) * PER_PAGE
         end = start + PER_PAGE
         df_paginated = df_sorted.iloc[start:end]

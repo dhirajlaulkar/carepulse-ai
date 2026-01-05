@@ -41,4 +41,4 @@ CarePulseAI analyzes doctor-patient conversations from CSV logs to identify high
 - **Backend**: FastAPI
 - **Data-Science**: Pandas, NLTK, TextBlob, Scikit-learn
 - **Frontend**: HTML5, CSS3 (Glassmorphism), Chart.js
-- **Integration**: Mock Google Calendar API Service
+- **Integration**: Google Calendar API Service
