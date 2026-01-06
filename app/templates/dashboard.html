@@ -22,7 +22,7 @@
                 <a href="#" class="active">
                     <span class="icon">📊</span> Dashboard
                 </a>
-                <a href="#">
+                <a href="https://calendar.google.com/calendar/r" target="_blank">
                     <span class="icon">📅</span> Schedule
                 </a>
                 <a href="/settings">
@@ -188,21 +188,20 @@
         // set initial state of dropdown
         document.getElementById('riskFilter').value = currentFilter;
         
-        async function schedulePatient(patientId) {
-            try {
-                const response = await fetch(`/api/schedule/${patientId}`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                if (result.error) {
-                    alert('Error: ' + result.error);
-                } else {
-                    alert(`Success! Appointment scheduled for ${result.time} (${result.priority} priority).`);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to schedule appointment.');
-            }
+        function schedulePatient(patientId, riskCategory, symptoms) {
+            const baseUrl = "https://calendar.google.com/calendar/render";
+            const action = "TEMPLATE";
+            const text = `Follow-up: Patient ${patientId} (${riskCategory} Risk)`;
+            const details = `Patient ID: ${patientId}\nRisk Level: ${riskCategory}\nSymptoms: ${symptoms}\n\nPlease review patient history before the call.`;
+            
+            // Encode parameters
+            const params = new URLSearchParams({
+                action: action,
+                text: text,
+                details: details
+            });
+            
+            window.open(`${baseUrl}?${params.toString()}`, '_blank');
         }
 
         // Chart.js Setup
