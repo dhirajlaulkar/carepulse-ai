@@ -16,7 +16,25 @@ templates = Jinja2Templates(directory="app/templates")
 
 import ast
 
+import json
+
 DATA_FILE = 'data/processed_patients.csv'
+SCHEDULED_FILE = 'data/scheduled_patients.json'
+
+def load_scheduled_ids():
+    if os.path.exists(SCHEDULED_FILE):
+        try:
+            with open(SCHEDULED_FILE, 'r') as f:
+                return set(json.load(f))
+        except:
+            return set()
+    return set()
+
+def save_scheduled_id(patient_id):
+    ids = load_scheduled_ids()
+    ids.add(patient_id)
+    with open(SCHEDULED_FILE, 'w') as f:
+        json.dump(list(ids), f)
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -24,6 +42,11 @@ def load_data():
         # Parse 'Symptoms' column from string representation to actual list
         if 'Symptoms' in df.columns:
             df['Symptoms'] = df['Symptoms'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else [])
+        
+        # Merge Scheduled Status
+        scheduled_ids = load_scheduled_ids()
+        df['Status'] = df['patient_id'].apply(lambda x: 'Scheduled' if x in scheduled_ids else 'Pending')
+        
         return df
     return pd.DataFrame()
 
@@ -133,8 +156,10 @@ async def schedule_patient(patient_id: str):
     symptoms = patient_data['Symptoms']
     reason = f"Follow-up for: {symptoms}" if symptoms else "General Follow-up"
     
-    appointment = calendar_service.schedule_appointment(patient_id, risk, reason)
-    return appointment
+    # Persist scheduled status
+    save_scheduled_id(patient_id)
+    
+    return {"status": "Scheduled", "patient_id": patient_id}
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

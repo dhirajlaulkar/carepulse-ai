@@ -188,20 +188,39 @@
         // set initial state of dropdown
         document.getElementById('riskFilter').value = currentFilter;
         
-        function schedulePatient(patientId, riskCategory, symptoms) {
+        async function schedulePatient(patientId, riskCategory, symptoms) {
+            // 1. Open Google Calendar
             const baseUrl = "https://calendar.google.com/calendar/render";
             const action = "TEMPLATE";
             const text = `Follow-up: Patient ${patientId} (${riskCategory} Risk)`;
             const details = `Patient ID: ${patientId}\nRisk Level: ${riskCategory}\nSymptoms: ${symptoms}\n\nPlease review patient history before the call.`;
             
-            // Encode parameters
             const params = new URLSearchParams({
                 action: action,
                 text: text,
                 details: details
             });
-            
             window.open(`${baseUrl}?${params.toString()}`, '_blank');
+
+            // 2. Mark as Scheduled in Backend
+            try {
+                await fetch(`/api/schedule/${patientId}`, { method: 'POST' });
+                
+                // 3. Update UI
+                const btn = document.getElementById(`btn-${patientId}`);
+                if (btn) {
+                    btn.textContent = 'Scheduled';
+                    btn.className = 'btn btn-sm btn-success';
+                    btn.disabled = true;
+                    btn.style.backgroundColor = '#00c853';
+                    btn.style.color = 'white';
+                    btn.style.border = 'none';
+                    btn.style.cursor = 'default';
+                    btn.onclick = null;
+                }
+            } catch (error) {
+                console.error('Failed to mark as scheduled:', error);
+            }
         }
 
         // Chart.js Setup

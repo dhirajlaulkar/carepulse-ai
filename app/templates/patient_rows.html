@@ -13,7 +13,11 @@
         {% endfor %}
     </td>
     <td>
-        <button class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}', '{{ patient['Risk Category'] }}', '{{ patient['Symptoms']|join(', ') }}')">Schedule</button>
+        {% if patient['Status'] == 'Scheduled' %}
+            <button class="btn btn-sm btn-success" disabled style="background-color: #00c853; color: white; border: none; cursor: default;">Scheduled</button>
+        {% else %}
+            <button id="btn-{{ patient.patient_id }}" class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}', '{{ patient['Risk Category'] }}', '{{ patient['Symptoms']|join(', ') }}')">Schedule</button>
+        {% endif %}
     </td>
 </tr>
 {% endfor %}
