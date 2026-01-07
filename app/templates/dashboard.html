@@ -189,6 +189,20 @@
         document.getElementById('riskFilter').value = currentFilter;
         
         async function schedulePatient(patientId, riskCategory, symptoms) {
+            // Calculate meeting time
+            const now = new Date();
+            let delayHours = 24; // Default High
+            if (riskCategory === 'Medium') delayHours = 72; // 3 days
+            if (riskCategory === 'Low') delayHours = 168; // 7 days
+            
+            const start = new Date(now.getTime() + delayHours * 60 * 60 * 1000);
+            start.setMinutes(0, 0, 0); // Round to hour
+            const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour duration
+            
+            // Format for Google Calendar (YYYYMMDDThhmmssZ)
+            const fmt = (d) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
+            const dates = `${fmt(start)}/${fmt(end)}`;
+            
             // 1. Open Google Calendar
             const baseUrl = "https://calendar.google.com/calendar/render";
             const action = "TEMPLATE";
@@ -198,13 +212,18 @@
             const params = new URLSearchParams({
                 action: action,
                 text: text,
-                details: details
+                details: details,
+                dates: dates
             });
             window.open(`${baseUrl}?${params.toString()}`, '_blank');
 
-            // 2. Mark as Scheduled in Backend
+            // 2. Mark as Scheduled in Backend with timestamp
             try {
-                await fetch(`/api/schedule/${patientId}`, { method: 'POST' });
+                await fetch(`/api/schedule/${patientId}`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timestamp: start.toISOString() })
+                });
                 
                 // 3. Update UI
                 const btn = document.getElementById(`btn-${patientId}`);

@@ -15,6 +15,8 @@
     <td>
         {% if patient['Status'] == 'Scheduled' %}
             <button class="btn btn-sm btn-success" disabled style="background-color: #00c853; color: white; border: none; cursor: default;">Scheduled</button>
+        {% elif patient['Status'] == 'Addressed' %}
+            <button class="btn btn-sm" disabled style="background-color: #cbd5e1; color: #475569; border: none; cursor: default;">Addressed</button>
         {% else %}
             <button id="btn-{{ patient.patient_id }}" class="btn btn-sm btn-outline" onclick="schedulePatient('{{ patient.patient_id }}', '{{ patient['Risk Category'] }}', '{{ patient['Symptoms']|join(', ') }}')">Schedule</button>
         {% endif %}
