@@ -18,23 +18,32 @@ import ast
 
 import json
 
+import datetime
+
 DATA_FILE = 'data/processed_patients.csv'
 SCHEDULED_FILE = 'data/scheduled_patients.json'
 
-def load_scheduled_ids():
+def load_scheduled_data():
     if os.path.exists(SCHEDULED_FILE):
         try:
             with open(SCHEDULED_FILE, 'r') as f:
-                return set(json.load(f))
+                data = json.load(f)
+                # Migration: if using old list format, convert to dict with future time
+                if isinstance(data, list):
+                    future = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat()
+                    return {pid: future for pid in data}
+                return data
         except:
-            return set()
-    return set()
+            return {}
+    return {}
 
-def save_scheduled_id(patient_id):
-    ids = load_scheduled_ids()
-    ids.add(patient_id)
+def save_scheduled_id(patient_id, timestamp=None):
+    data = load_scheduled_data()
+    if not timestamp:
+        timestamp = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat()
+    data[patient_id] = timestamp
     with open(SCHEDULED_FILE, 'w') as f:
-        json.dump(list(ids), f)
+        json.dump(data, f)
 
 def load_data():
     if os.path.exists(DATA_FILE):
@@ -43,9 +52,20 @@ def load_data():
         if 'Symptoms' in df.columns:
             df['Symptoms'] = df['Symptoms'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else [])
         
+        
         # Merge Scheduled Status
-        scheduled_ids = load_scheduled_ids()
-        df['Status'] = df['patient_id'].apply(lambda x: 'Scheduled' if x in scheduled_ids else 'Pending')
+        scheduled_data = load_scheduled_data()
+        now_str = datetime.datetime.now().isoformat()
+
+        def get_status(pid):
+            if pid not in scheduled_data:
+                return 'Pending'
+            timestamp = scheduled_data[pid]
+            if timestamp < now_str:
+                return 'Addressed'
+            return 'Scheduled'
+
+        df['Status'] = df['patient_id'].apply(get_status)
         
         return df
     return pd.DataFrame()
@@ -141,23 +161,20 @@ async def get_patients():
 from src.calendar_service import calendar_service
 
 @app.post("/api/schedule/{patient_id}")
-async def schedule_patient(patient_id: str):
+async def schedule_patient(patient_id: str, request: Request):
     df = load_data()
     if df.empty:
         return {"error": "No data found"}
     
-    patient = df[df['patient_id'] == patient_id]
-    if patient.empty:
-        return {"error": "Patient not found"}
-    
-    patient_data = patient.iloc[0]
-    risk = patient_data['Risk Category']
+    # Get timestamp from body if provided
+    try:
+        body = await request.json()
+        timestamp = body.get('timestamp')
+    except:
+        timestamp = None
 
-    symptoms = patient_data['Symptoms']
-    reason = f"Follow-up for: {symptoms}" if symptoms else "General Follow-up"
-    
     # Persist scheduled status
-    save_scheduled_id(patient_id)
+    save_scheduled_id(patient_id, timestamp)
     
     return {"status": "Scheduled", "patient_id": patient_id}
 
