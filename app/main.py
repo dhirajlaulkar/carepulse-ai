@@ -22,6 +22,25 @@ import datetime
 
 DATA_FILE = 'data/processed_patients.csv'
 SCHEDULED_FILE = 'data/scheduled_patients.json'
+SETTINGS_FILE = 'data/settings.json'
+
+def load_settings():
+    defaults = {'high_threshold': 90, 'medium_threshold': 50, 'per_page': 15}
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                saved = json.load(f)
+                defaults.update(saved)
+                return defaults
+        except:
+            return defaults
+    return defaults
+
+def save_settings(settings):
+    current = load_settings()
+    current.update(settings)
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(current, f)
 
 def load_scheduled_data():
     if os.path.exists(SCHEDULED_FILE):
@@ -52,7 +71,19 @@ def load_data():
         if 'Symptoms' in df.columns:
             df['Symptoms'] = df['Symptoms'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else [])
         
-        
+        # Recalculate Risk Category based on Settings
+        settings = load_settings()
+        high_thresh = int(settings.get('high_threshold', 90))
+        med_thresh = int(settings.get('medium_threshold', 50))
+
+        def calculate_risk(score):
+            if score >= high_thresh: return 'High'
+            if score >= med_thresh: return 'Medium'
+            return 'Low'
+
+        if 'Risk Score' in df.columns:
+            df['Risk Category'] = df['Risk Score'].apply(calculate_risk)
+
         # Merge Scheduled Status
         scheduled_data = load_scheduled_data()
         now_str = datetime.datetime.now().isoformat()
