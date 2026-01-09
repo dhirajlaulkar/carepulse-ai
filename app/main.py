@@ -104,9 +104,10 @@ def load_data():
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, page: int = 1):
     df = load_data()
+    settings = load_settings()
     stats = {'total': 0, 'high_risk': 0, 'medium_risk': 0, 'low_risk': 0}
     patients = []
-    PER_PAGE = 15
+    PER_PAGE = int(settings.get('per_page', 15))
     total_pages = 1
 
     if not df.empty:
@@ -161,8 +162,9 @@ async def settings(request: Request):
 @app.get("/partials/patients", response_class=HTMLResponse)
 async def get_patient_rows(request: Request, page: int = 1, risk_filter: str = 'all'):
     df = load_data()
+    settings = load_settings()
     patients = []
-    PER_PAGE = 15
+    PER_PAGE = int(settings.get('per_page', 15))
     
     if not df.empty:
         df_filtered = df.copy()
@@ -181,6 +183,16 @@ async def get_patient_rows(request: Request, page: int = 1, risk_filter: str = '
         "request": request,
         "patients": patients
     })
+
+@app.get("/api/settings")
+async def get_settings_api():
+    return load_settings()
+
+@app.post("/api/settings")
+async def update_settings_api(request: Request):
+    new_settings = await request.json()
+    save_settings(new_settings)
+    return {"status": "success", "settings": load_settings()}
 
 @app.get("/api/patients")
 async def get_patients():

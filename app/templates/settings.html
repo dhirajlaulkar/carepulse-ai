@@ -44,14 +44,94 @@
                 </div>
             </header>
 
-            <div class="settings-container" style="padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                <h3>Application Settings</h3>
-                <p>Configuration options will appear here.</p>
+            <div class="settings-container" style="padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); max-width: 600px;">
+                <h3>Risk Score Thresholds</h3>
+                <p style="color: #666; margin-bottom: 20px;">Define the minimum score required for each risk category.</p>
                 
-                <div style="margin-top: 20px; padding: 20px; border: 1px dashed #ccc; border-radius: 8px; text-align: center; color: #666;">
-                    Settings functionality coming soon.
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">High Risk Minimum Score</label>
+                    <input type="number" id="highThreshold" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
                 </div>
+
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Medium Risk Minimum Score</label>
+                    <input type="number" id="mediumThreshold" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <small style="color: #888;">Scores below this will be considered Low Risk.</small>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3>Display Settings</h3>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Patients Per Page</label>
+                    <select id="perPage" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+
+                <button onclick="saveSettings()" id="saveBtn" style="background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">Save Changes</button>
+                <span id="statusMessage" style="margin-left: 10px; font-size: 0.9em;"></span>
             </div>
+
+            <script>
+                // Load Settings on Page Load
+                async function loadSettings() {
+                    try {
+                        const response = await fetch('/api/settings');
+                        const settings = await response.json();
+                        
+                        document.getElementById('highThreshold').value = settings.high_threshold || 90;
+                        document.getElementById('mediumThreshold').value = settings.medium_threshold || 50;
+                        document.getElementById('perPage').value = settings.per_page || 15;
+                    } catch (error) {
+                        console.error('Failed to load settings:', error);
+                    }
+                }
+
+                // Save Settings
+                async function saveSettings() {
+                    const btn = document.getElementById('saveBtn');
+                    const msg = document.getElementById('statusMessage');
+                    
+                    btn.disabled = true;
+                    btn.textContent = 'Saving...';
+                    msg.textContent = '';
+
+                    const settings = {
+                        high_threshold: parseInt(document.getElementById('highThreshold').value),
+                        medium_threshold: parseInt(document.getElementById('mediumThreshold').value),
+                        per_page: parseInt(document.getElementById('perPage').value)
+                    };
+
+                    try {
+                        const response = await fetch('/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(settings)
+                        });
+                        
+                        if (response.ok) {
+                            msg.textContent = 'Settings saved successfully!';
+                            msg.style.color = 'green';
+                            setTimeout(() => msg.textContent = '', 3000);
+                        } else {
+                            throw new Error('Failed to save');
+                        }
+                    } catch (error) {
+                        msg.textContent = 'Error saving settings.';
+                        msg.style.color = 'red';
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Save Changes';
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', loadSettings);
+            </script>
         </main>
     </div>
 </body>
