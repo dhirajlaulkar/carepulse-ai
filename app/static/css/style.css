@@ -186,6 +186,65 @@ header {
     font-weight: 700;
     color: var(--accent-color);
     box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-profile {
+    position: relative;
+}
+
+.user-profile:hover .avatar {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 4px var(--accent-light);
+}
+
+.profile-menu {
+    position: absolute;
+    top: 120%;
+    right: 0;
+    width: 160px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    padding: 8px;
+    display: none;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.profile-menu.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.menu-item {
+    display: block;
+    padding: 10px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.menu-item:hover {
+    background: var(--bg-body);
+}
+
+.menu-item.text-danger {
+    color: var(--danger-color);
+}
+
+.menu-item.text-danger:hover {
+    background: var(--danger-bg);
 }
 
 /* Stats Grid */

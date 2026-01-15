@@ -38,8 +38,12 @@
                     <p>Manage your application preferences</p>
                 </div>
                 <div class="header-right">
-                    <div class="user-profile">
+                    <div class="user-profile" onclick="toggleProfileMenu()">
                         <div class="avatar">DR</div>
+                        <div class="profile-menu" id="profileMenu">
+                            <a href="#" class="menu-item">Profile</a>
+                            <a href="#" class="menu-item text-danger">Logout</a>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -78,6 +82,21 @@
             </div>
 
             <script>
+                // Profile Menu Toggle
+                function toggleProfileMenu() {
+                    const menu = document.getElementById('profileMenu');
+                    menu.classList.toggle('active');
+                }
+
+                // Close menu when clicking outside
+                document.addEventListener('click', function(event) {
+                    const profile = document.querySelector('.user-profile');
+                    const menu = document.getElementById('profileMenu');
+                    if (profile && !profile.contains(event.target)) {
+                        menu.classList.remove('active');
+                    }
+                });
+
                 // Load Settings on Page Load
                 async function loadSettings() {
                     try {
