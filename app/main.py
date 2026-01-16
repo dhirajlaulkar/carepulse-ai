@@ -1,12 +1,14 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 import pandas as pd
 import os
 import uvicorn
 
 app = FastAPI(title="CarePulseAI")
+app.add_middleware(SessionMiddleware, secret_key="your-secret-key-here")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -101,8 +103,27 @@ def load_data():
         return df
     return pd.DataFrame()
 
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "admin":
+        request.session['user'] = username
+        return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+@app.get("/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=303)
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, page: int = 1):
+    if 'user' not in request.session:
+        return RedirectResponse(url="/login")
+
     df = load_data()
     settings = load_settings()
     stats = {'total': 0, 'high_risk': 0, 'medium_risk': 0, 'low_risk': 0}
@@ -155,6 +176,8 @@ async def dashboard(request: Request, page: int = 1):
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings(request: Request):
+    if 'user' not in request.session:
+        return RedirectResponse(url="/login")
     return templates.TemplateResponse("settings.html", {
         "request": request
     })
