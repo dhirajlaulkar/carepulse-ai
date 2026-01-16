@@ -207,56 +207,41 @@
         document.getElementById('riskFilter').value = currentFilter;
         
         async function schedulePatient(patientId, riskCategory, symptoms) {
-            // Calculate meeting time
-            const now = new Date();
-            let delayHours = 24; // Default High
-            if (riskCategory === 'Medium') delayHours = 72; // 3 days
-            if (riskCategory === 'Low') delayHours = 168; // 7 days
-            
-            const start = new Date(now.getTime() + delayHours * 60 * 60 * 1000);
-            start.setMinutes(0, 0, 0); // Round to hour
-            const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour duration
-            
-            // Format for Google Calendar (YYYYMMDDThhmmssZ)
-            const fmt = (d) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
-            const dates = `${fmt(start)}/${fmt(end)}`;
-            
-            // 1. Open Google Calendar
-            const baseUrl = "https://calendar.google.com/calendar/render";
-            const action = "TEMPLATE";
-            const text = `Follow-up: Patient ${patientId} (${riskCategory} Risk)`;
-            const details = `Patient ID: ${patientId}\nRisk Level: ${riskCategory}\nSymptoms: ${symptoms}\n\nPlease review patient history before the call.`;
-            
-            const params = new URLSearchParams({
-                action: action,
-                text: text,
-                details: details,
-                dates: dates
-            });
-            window.open(`${baseUrl}?${params.toString()}`, '_blank');
+            const btn = document.querySelector(`button[onclick*="${patientId}"]`);
+            let originalText = "Schedule";
+            if(btn) {
+                originalText = btn.innerText;
+                btn.innerText = "Scheduling...";
+                btn.disabled = true;
+            }
 
-            // 2. Mark as Scheduled in Backend with timestamp
             try {
-                await fetch(`/api/schedule/${patientId}`, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ timestamp: start.toISOString() })
+                // Call Server-Side API
+                const response = await fetch(`/api/schedule/${patientId}`, { 
+                    method: 'POST'
                 });
                 
-                // 3. Update UI
-                const btn = document.getElementById(`btn-${patientId}`);
-                if (btn) {
-                    btn.textContent = 'Scheduled';
-                    btn.className = 'btn btn-sm btn-success';
-                    btn.disabled = true;
-                    btn.style.backgroundColor = '#00c853';
-                    btn.style.color = 'white';
-                    btn.style.border = 'none';
-                    btn.style.cursor = 'default';
-                    btn.onclick = null;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || "Failed to schedule");
                 }
+                
+                // Update UI
+                if(btn) {
+                    btn.className = "btn btn-sm btn-outline-success disabled";
+                    btn.innerText = "Scheduled";
+                }
+                
+                alert(`Appointment Scheduled for ${result.time}!`);
+
             } catch (error) {
-                console.error('Failed to mark as scheduled:', error);
+                console.error('Error:', error);
+                alert('Failed to schedule appointment: ' + error.message);
+                if(btn) {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
             }
         }
 

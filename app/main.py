@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import pandas as pd
@@ -209,17 +209,61 @@ async def schedule_patient(patient_id: str, request: Request):
     if df.empty:
         return {"error": "No data found"}
     
-    # Get timestamp from body if provided
-    try:
-        body = await request.json()
-        timestamp = body.get('timestamp')
-    except:
-        timestamp = None
+    # Extract patient details for the logic
+    patient = df[df['patient_id'] == patient_id].iloc[0]
+    risk_level = patient.get('Risk Category', 'Low')
+    reason = f"Symptoms: {', '.join(patient.get('Symptoms', []))}"
 
-    # Persist scheduled status
+    # 1. Call Google Calendar API
+    result = calendar_service.schedule_appointment(patient_id, risk_level, reason)
+    
+    if "error" in result:
+        print(f"Calendar Error: {result['error']}")
+        # Fallback: Just mark as scheduled locally if API fails (or return error to UI)
+        # For now, let's return error so user knows
+        return JSONResponse(status_code=500, content={"message": result['error']})
+
+    # 2. Persist scheduled status with ACTUAL time from calendar
+    scheduled_time = result.get('time') # Expecting ISO format or similar if changed
+    # The service returns formatted string "YYYY-MM-DD HH:MM", but save_scheduled_id expects ISO for comparison?
+    # actually save_scheduled_id stores whatever we pass. load_data compares it.
+    # load_data compares with now_str (ISO). 
+    # Let's ensure we store ISO format for consistency.
+    # The service returns 'time' as string. The service ALSO has 'link'.
+    
+    # Let's recreate ISO from the service logic or just use the one we pass?
+    # actually the service creates 'start_time' datetime object.
+    # We should update the service or just parse the returned string. 
+    # Better yet, let's modify the service to return isoformat in a bit or just parse here.
+    # Service returns: start_time.strftime("%Y-%m-%d %H:%M") 
+    
+    # Quick fix: allow service to do its thing, but we want to save a robust timestamp. 
+    # Let's just generate a compliant timestamp here based on the risk logic again OR 
+    # (Cleaner) Trust the service knows best. 
+    
+    # Re-calculating for storage consistency (since service returns pretty string):
+    # Actually, let's just use the current time + 1 day/3days etc as a proxy for "when is it addressed"
+    # The 'Addressed' logic compares THIS stored timestamp with NOW. 
+    # If Stored < Now, it's Addressed.
+    # So we should store the Meeting Time.
+    
+    # Let's just update save_scheduled_id to accept what we have.
+    timestamp = result.get('time')
+    # Use proper ISO format for string comparison
+    try:
+        dt = datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+        timestamp = dt.isoformat()
+    except:
+        timestamp = datetime.datetime.now().isoformat()
+
     save_scheduled_id(patient_id, timestamp)
     
-    return {"status": "Scheduled", "patient_id": patient_id}
+    return {
+        "status": "Scheduled", 
+        "patient_id": patient_id, 
+        "link": result.get('link'),
+        "time": result.get('time')
+    }
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
